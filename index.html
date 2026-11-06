@@ -678,6 +678,7 @@ if (typeof module !== 'undefined') module.exports = DMS;
   try{ var u=localStorage.getItem('dms2-unit'); if(u==='t'||u==='kg'||u==='emb'||u==='sc40') S.unit=u; }catch(e){}
 
   function fmtDate(iso){ if(!iso) return '—'; var p=iso.slice(0,10).split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+  function hora(iso){ try{ var t=new Date(iso).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'}); return t&&t!=='Invalid Date'?' às '+t:''; }catch(e){ return ''; } }
   function fmtDT(iso){ try{ return new Date(iso).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}); }catch(e){ return iso||''; } }
   function kg(n){ return NF0.format(Math.round(n)); }
   function uName(){ return S.unit==='emb'?'emb.':(S.unit==='sc40'?'sc 40 kg':S.unit); }
@@ -761,7 +762,7 @@ if (typeof module !== 'undefined') module.exports = DMS;
     S.cargas.forEach(function(c,i){ var o=el('option',null,fmtDate(c.dataExtracao)+(i===0?' · mais recente':'')); o.value=c.id; if(c.id===S.selId) o.selected=true; sel.appendChild(o); });
     if(S.cur){
       var c=S.cur.carga;
-      $('metaCarga').textContent='Resumo de Produção extraído em '+fmtDate(c.dataExtracao)+(S.prev?' · comparado com '+fmtDate(S.prev.carga.dataExtracao):'')+(S.local?' · visualização local, não salva':'')+(S.offline?' · versão offline gerada em '+fmtDT(window.__OFFLINE.geradoEm):'');
+      $('metaCarga').textContent='Resumo de Produção de '+fmtDate(c.dataExtracao)+(c.enviadoEm&&!S.local?', atualizado'+hora(c.enviadoEm):'')+(S.prev?' · comparado com '+fmtDate(S.prev.carga.dataExtracao)+(S.prev.carga.enviadoEm?hora(S.prev.carga.enviadoEm):''):'')+(S.local?' · visualização local, não salva':'')+(S.offline?' · versão offline gerada em '+fmtDT(window.__OFFLINE.geradoEm):'');
       $('stamp').textContent=(c.arquivo||'')+(c.enviadoEm?' · enviada '+fmtDT(c.enviadoEm):'');
     }
   }
