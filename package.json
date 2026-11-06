@@ -1,0 +1,7 @@
+{
+  "name": "dashboard-saldos-dms",
+  "private": true,
+  "description": "Painel de saldos de lotes da Dois Marcos Sementes",
+  "scripts": { "processar": "node scripts/processar.js" },
+  "dependencies": { "xlsx": "0.18.5" }
+}

@@ -1,0 +1,2 @@
+Coloque aqui as planilhas do Resumo de Produção (.xls) extraídas do sistema.
+Cada arquivo novo vira uma carga no painel automaticamente.
