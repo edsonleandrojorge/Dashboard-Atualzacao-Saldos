@@ -694,7 +694,7 @@ if (typeof module !== 'undefined') module.exports = DMS;
   function tag(o){ var s=el('span','tag'); var d=el('i','dot'); d.style.background=OCOL[o]; s.appendChild(d); s.appendChild(document.createTextNode(DMS.ORIGENS[o])); return s; }
   function valueEl(id,txt){ var e=$(id); e.textContent=''; e.appendChild(document.createTextNode(txt)); e.appendChild(el('small',null,uName())); return e; }
   function prog(id,parts){ var b=$(id); b.textContent=''; parts.forEach(function(p){ var i=el('i'); i.style.width=Math.max(0,Math.min(100,p[0]))+'%'; if(p[1]) i.style.background=p[1]; b.appendChild(i); }); }
-  function footRows(id,rows){ var f=$(id); f.textContent=''; rows.forEach(function(r){ var d=el('div'), a=el('span'); if(r[2]){ var i=el('i','dot'); i.style.background=r[2]; a.appendChild(i); } a.appendChild(document.createTextNode(r[0])); d.appendChild(a); var b=el('span',null,r[1]); b.style.color='var(--ink)'; b.style.fontWeight='600'; d.appendChild(b); f.appendChild(d); }); }
+  function footRows(id,rows){ var f=$(id); f.textContent=''; rows.forEach(function(r){ var d=el('div'), a=el('span'); if(r[2]){ var i=el('i','dot'); i.style.background=r[2]; a.appendChild(i); } a.appendChild(document.createTextNode(r[0])); d.appendChild(a); var b=el('span',null,r[1]); b.style.color='var(--ink)'; b.style.fontWeight='600'; b.style.whiteSpace='nowrap'; b.style.textAlign='right'; d.appendChild(b); f.appendChild(d); }); }
 
   // ---------- dados ----------
   function loadJSON(c){
