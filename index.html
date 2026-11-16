@@ -260,7 +260,7 @@ tr.open .caret{transform:rotate(90deg)}
       <div class="top-ctl">
         <label class="pill"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><select id="selCarga" disabled aria-label="Carga"><option>—</option></select></label>
         <div class="ms" id="resWrap" hidden><button type="button" class="btn" id="btnRes" aria-haspopup="true" aria-expanded="false"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>Resumos para e-mail</button>
-          <div class="mspop" id="resPop" hidden style="right:0;left:auto;min-width:340px;max-height:min(640px,80vh)">
+          <div class="mspop" id="resPop" hidden style="right:0;left:auto;min-width:340px;max-height:min(760px,85vh)">
             <div class="none" style="color:var(--ink);font-weight:700;padding-bottom:0">Comercial · imagem PNG</div>
             <div class="none" style="padding-top:2px">Saldo disponível branco + tratado · Bags 5 MI · produção própria + terceiros (revenda) · reserva de plantio descontada · carga selecionada</div>
             <button type="button" class="btn" data-u="bags" data-m="com" style="justify-content:flex-start">Baixar em bags</button>
@@ -269,6 +269,10 @@ tr.open .caret{transform:rotate(90deg)}
             <div class="none" style="padding-top:2px" id="resMultDesc">Saldo em reserva de plantio (coluna RP) branco + tratado · Dois Marcos + BASF + terceiros · segue o filtro Embalagem · carga selecionada</div>
             <button type="button" class="btn" data-u="bags" data-m="mult" style="justify-content:flex-start" id="resMultBags">Baixar em bags</button>
             <button type="button" class="btn" data-u="sc40" data-m="mult" style="justify-content:flex-start">Baixar em sacos de 40 kg</button>
+            <div class="none" style="color:var(--ink);font-weight:700;padding-bottom:0;margin-top:6px;border-top:1px solid var(--line);padding-top:12px">Terceiros · imagem PNG</div>
+            <div class="none" style="padding-top:2px" id="resTercDesc">Saldo dos lotes adquiridos de terceiros · revenda (branco + tratado) e multiplicação · segue o filtro Embalagem · carga selecionada</div>
+            <button type="button" class="btn" data-u="bags" data-m="terc" style="justify-content:flex-start" id="resTercBags">Baixar em bags</button>
+            <button type="button" class="btn" data-u="sc40" data-m="terc" style="justify-content:flex-start">Baixar em sacos de 40 kg</button>
           </div></div>
         <button type="button" class="btn primary" id="btnNova" hidden><svg class="i" viewBox="0 0 24 24"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 15v4h16v-4"/></svg>Carregar planilha</button>
       </div>
@@ -1565,15 +1569,67 @@ if (typeof module !== 'undefined') module.exports = DMS;
     if(line) t(line,P,ly,'400 11px '+FF,'#7a857e');
     return {canvas:cv,total:tot,unit:u};
   }
-  function resMultInfo(){ var es=embSel(); $('resMultDesc').textContent='Saldo em reserva de plantio (coluna RP) branco + tratado · Dois Marcos + BASF + terceiros · '+es.nome+' · carga selecionada'; $('resMultBags').textContent='Baixar em '+(es.u==='emb.'?'embalagens':es.u); }
+  function resMultInfo(){ var es=embSel(); $('resMultDesc').textContent='Saldo em reserva de plantio (coluna RP) branco + tratado · Dois Marcos + BASF + terceiros · '+es.nome+' · carga selecionada'; $('resMultBags').textContent='Baixar em '+(es.u==='emb.'?'embalagens':es.u);
+    $('resTercDesc').textContent='Saldo dos lotes adquiridos de terceiros · revenda (branco + tratado) e multiplicação · '+es.nome+' · carga selecionada'; $('resTercBags').textContent=$('resMultBags').textContent; }
+  function resumoTercRows(unit){
+    var m={}, g=$('gEmb').value;
+    S.allLotes.forEach(function(o){
+      if(o.origem!=='TERC'||(g&&o.emb!==g)||!(o.saldo>0.5)) return;
+      var d=unit==='sc40'?40:o.kgsc; if(!(d>0)) return;
+      var trL=Math.max(0,o.tratB-o.rpB), brL=Math.max(0,o.disp-trL); // reserva sai primeiro do tratado
+      var c=m[o.cultivar]||(m[o.cultivar]={c:o.cultivar,lotes:0,br:0,tr:0,mu:0});
+      c.lotes++; c.br+=brL/d; c.tr+=trL/d; c.mu+=o.rpB/d; });
+    return Object.keys(m).map(function(k){ var c=m[k]; c.t=c.br+c.tr+c.mu; return c; }).filter(function(c){ return c.t>=0.5; }).sort(function(a,b){ return b.t-a.t; });
+  }
+  function desenharTerc(unit){
+    var es=embSel(), rows=resumoTercRows(unit), sc=unit==='sc40', u=sc?'sc':es.u, data=fmtDate(S.cur.carga.dataExtracao);
+    var f=function(n){ return NF0.format(Math.round(n)); }, g=function(n){ return Math.round(n)?f(n):'—'; };
+    var tb=0,tt=0,tm=0,lots=0; rows.forEach(function(c){ tb+=c.br; tt+=c.tr; tm+=c.mu; lots+=c.lotes; }); var tot=tb+tt+tm;
+    var W=960, P=30, RH=30, H=268+RH*(rows.length+1)+20+86, k=2, CB='#c3ccc5', CT='#6aa52a', CM='#d39a2c';
+    var cv=document.createElement('canvas'); cv.width=W*k; cv.height=H*k; var x=cv.getContext('2d'); x.scale(k,k);
+    var FF='"Segoe UI", Arial, Helvetica, sans-serif';
+    x.fillStyle='#ffffff'; x.fillRect(0,0,W,H);
+    function t(s,X,Y,font,col,al){ x.font=font; x.fillStyle=col; x.textAlign=al||'left'; x.textBaseline='alphabetic'; x.fillText(s,X,Y); }
+    function sp(s,X,Y,font,col,ls){ x.font=font; x.fillStyle=col; x.textAlign='left'; var cx=X; for(var i=0;i<s.length;i++){ x.fillText(s[i],cx,Y); cx+=x.measureText(s[i]).width+ls; } }
+    function rr(X,Y,w,h,r){ r=Math.min(r,w/2,h/2); x.beginPath(); x.moveTo(X+r,Y); x.arcTo(X+w,Y,X+w,Y+h,r); x.arcTo(X+w,Y+h,X,Y+h,r); x.arcTo(X,Y+h,X,Y,r); x.arcTo(X,Y,X+w,Y,r); x.closePath(); }
+    sp('DOIS MARCOS SEMENTES · LOTES DE TERCEIROS',P,40,'700 11px '+FF,'#4f8a1c',1.3);
+    t('Saldo de sementes adquiridas de terceiros',P,70,'700 22px '+FF,'#1d241f');
+    t((sc?'Em sacos de 40 kg · lotes em '+es.nome:es.nome)+' · posição de '+data,P,92,'400 13px '+FF,'#5f6b63');
+    t('Revenda (comercial) '+f(tb+tt)+' · Multiplicação (reserva RP) '+f(tm)+' '+u,P,110,'400 13px '+FF,'#5f6b63');
+    t(f(tot),W-P,70,'700 30px '+FF,'#2f5d0e','right'); t((sc?'sc 40 kg':u)+' em '+rows.length+' cultivares',W-P,92,'400 12px '+FF,'#5f6b63','right');
+    x.fillStyle='#4f8a1c'; x.fillRect(P,124,W-2*P,3);
+    var kp=[['REVENDA BRANCO',CB,f(tb)+' '+u],['REVENDA TRATADO TSI',CT,f(tt)+' '+u],['MULTIPLICAÇÃO',CM,f(tm)+' '+u],['LOTES',null,f(lots)]], bw=(W-2*P-30)/4;
+    kp.forEach(function(q,i){ var X=P+i*(bw+10); rr(X,140,bw,62,8); x.strokeStyle='#e1e6e1'; x.lineWidth=1; x.stroke();
+      var tx=X+12; if(q[1]){ rr(tx,156,10,10,3); x.fillStyle=q[1]; x.fill(); tx+=16; } sp(q[0],tx,165,'700 11px '+FF,'#5f6b63',0.6); t(q[2],X+12,190,'700 20px '+FF,'#1d241f'); });
+    var cols={lot:400,br:505,tr:610,mu:725,tot:815,bar:832}, Y=233;
+    sp('CULTIVAR',P+8,Y,'700 11px '+FF,'#5f6b63',0.7);
+    [['LOTES',cols.lot],['REV. BRANCO',cols.br],['REV. TSI',cols.tr],['MULTIPLICAÇÃO',cols.mu],['TOTAL',cols.tot]].forEach(function(h){ t(h[0],h[1],Y,'700 11px '+FF,'#5f6b63','right'); });
+    x.fillStyle='#d9dfda'; x.fillRect(P,Y+9,W-2*P,1);
+    var mx=rows.reduce(function(a,c){ return Math.max(a,c.t); },0)||1, y0=Y+10, BW=W-P-cols.bar-6;
+    rows.forEach(function(c,i){ var ry=y0+i*RH;
+      if(i%2){ x.fillStyle='#f7f9f6'; x.fillRect(P,ry,W-2*P,RH); }
+      x.fillStyle='#eef1ee'; x.fillRect(P,ry+RH-1,W-2*P,1);
+      var by=ry+RH/2+5, nm=c.c; x.font='400 13px '+FF; while(x.measureText(nm).width>cols.lot-P-50&&nm.length>4) nm=nm.slice(0,-2); if(nm!==c.c) nm=nm.replace(/.$/,'…');
+      t(nm,P+8,by,'400 13px '+FF,'#1d241f'); t(f(c.lotes),cols.lot,by,'400 13px '+FF,'#1d241f','right');
+      t(g(c.br),cols.br,by,'400 13px '+FF,'#1d241f','right'); t(g(c.tr),cols.tr,by,'600 13px '+FF,'#3f7a12','right'); t(g(c.mu),cols.mu,by,'600 13px '+FF,'#9a6a12','right'); t(f(c.t),cols.tot,by,'700 13px '+FF,'#1d241f','right');
+      var bx=cols.bar; [[c.br,CB],[c.tr,CT],[c.mu,CM]].forEach(function(q){ var w=q[0]/mx*BW; if(w>0.5){ rr(bx,ry+RH/2-4.5,Math.max(w,2),9,3); x.fillStyle=q[1]; x.fill(); bx+=w+2; } });
+    });
+    var fy=y0+rows.length*RH; x.fillStyle='#1d241f'; x.fillRect(P,fy,W-2*P,2);
+    var ty=fy+22; t('Total',P+8,ty,'700 13px '+FF,'#1d241f'); [[lots,cols.lot],[tb,cols.br],[tt,cols.tr],[tm,cols.mu],[tot,cols.tot]].forEach(function(q){ t(f(q[0]),q[1],ty,'700 13px '+FF,'#1d241f','right'); });
+    var note=(sc?'Sacos de 40 kg = saldo em kg ÷ 40. ':(es.g?'':'Embalagens somadas na unidade de cada lote (bags e sacos). '))+'Lotes de terceiros = lotes fora da nomenclatura Dois Marcos (NNDM) e BASF (UWML). Saldo = produzido − descarte − embarcado. Multiplicação = volume bloqueado na coluna RP (reserva de plantio); revenda = saldo livre, com a reserva abatida primeiro do tratado. Fonte: Resumo de Produção extraído em '+data+'.';
+    x.font='400 11px '+FF; var words=note.split(' '), line='', ly=ty+30;
+    words.forEach(function(wd){ var tst=line?line+' '+wd:wd; if(x.measureText(tst).width>W-2*P){ t(line,P,ly,'400 11px '+FF,'#7a857e'); line=wd; ly+=16; } else line=tst; });
+    if(line) t(line,P,ly,'400 11px '+FF,'#7a857e');
+    return {canvas:cv,total:tot,unit:u};
+  }
   function baixarResumo(dl,unit,modo){
     var m=$('offMsg'); m.hidden=false; m.className='msg';
     if(!S.cur){ m.className='msg err'; m.textContent='Nenhuma carga aberta.'; return; }
-    var mult=modo==='mult', r=desenharResumo(unit,modo), dt=S.cur.carga.dataExtracao.split('-').reverse().join('-'), eg=$('gEmb').value;
-    var nome=mult?'saldo_reserva_plantio_DMS_'+(unit==='sc40'?'sc40kg':(eg?eg.replace(/\s+/g,''):'todas'))+'_'+dt+'.png':'saldo_branco_tratado_DMS_'+(unit==='sc40'?'sc40kg':'bags5MI')+'_'+dt+'.png';
+    var mult=modo==='mult', terc=modo==='terc', r=terc?desenharTerc(unit):desenharResumo(unit,modo), dt=S.cur.carga.dataExtracao.split('-').reverse().join('-'), eg=$('gEmb').value;
+    var nome=terc?'saldo_terceiros_DMS_'+(unit==='sc40'?'sc40kg':(eg?eg.replace(/\s+/g,''):'todas'))+'_'+dt+'.png':mult?'saldo_reserva_plantio_DMS_'+(unit==='sc40'?'sc40kg':(eg?eg.replace(/\s+/g,''):'todas'))+'_'+dt+'.png':'saldo_branco_tratado_DMS_'+(unit==='sc40'?'sc40kg':'bags5MI')+'_'+dt+'.png';
     r.canvas.toBlob(function(blob){
       if(!blob){ m.className='msg err'; m.textContent='Não foi possível gerar a imagem.'; return; }
-      dl.save({filename:nome,data:blob}).then(function(){ m.className='msg ok'; m.textContent='Imagem '+nome+' baixada ('+NF0.format(Math.round(r.total))+' '+r.unit+(mult?' em reserva de plantio':' disponíveis')+'). Cole no corpo do e-mail.'; })
+      dl.save({filename:nome,data:blob}).then(function(){ m.className='msg ok'; m.textContent='Imagem '+nome+' baixada ('+NF0.format(Math.round(r.total))+' '+r.unit+(terc?' de terceiros em estoque':mult?' em reserva de plantio':' disponíveis')+'). Cole no corpo do e-mail.'; })
         .catch(function(e){ var c=e&&e.code; if(c==='declined'){ m.hidden=true; return; } m.className='msg err'; m.textContent='Não foi possível baixar ('+(c||e)+').'; });
     },'image/png');
   }
